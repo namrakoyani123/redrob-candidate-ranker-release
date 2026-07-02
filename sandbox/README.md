@@ -2,33 +2,43 @@
 
 Deploy `streamlit_app.py` for hackathon **Stage 1 sandbox** requirement.
 
-## Streamlit Cloud (free)
+## Official submission mode (default)
 
-1. Push `redrob-candidate-ranker` to GitHub (public).
-2. https://streamlit.io/cloud → New app → repo root `streamlit_app.py`.
-3. Add `sample_candidates.json` path or rely on upload in UI.
-4. Sandbox URL → paste into portal metadata.
+The sandbox shows the **exact** portal output from the full 100K pipeline:
+
+- `team_redrob_candidate_ranker.csv`
+- `sandbox/submission_bundle.json` (top-100 profiles for display)
+
+Regenerate after re-ranking:
+
+```bash
+python scripts/export_submission_bundle.py
+```
+
+In the UI: **Official portal submission** → **Show official submission**.
+
+Top rank should be `CAND_0018499` (matches CSV).
+
+## Custom demo mode
+
+**Custom demo** ranks a small uploaded/sample pool only — output will **not** match the portal CSV.
+
+## Streamlit Cloud
+
+1. Push repo to GitHub (include `sandbox/submission_bundle.json`).
+2. https://share.streamlit.io → New app → `streamlit_app.py`.
+3. Paste sandbox URL into `submission_metadata.yaml`.
 
 ## Local
 
 ```bash
-pip install streamlit
+pip install -r requirements.txt
 streamlit run streamlit_app.py
 ```
 
-## Docker (full rank, CPU)
+## Full 100K reproduce (Stage 3)
 
 ```bash
-docker build -t redrob-ranker .
-docker run --rm -v "%cd%/data:/app/data" redrob-ranker python rank.py --skip-clean -o outputs/submission.csv
+git lfs pull
+python run.py --skip-clean --jd job_description.md -o team_redrob_candidate_ranker.csv
 ```
-
-Mount `data/embeddings/` for sub-90s rank on 100K.
-
-## Official reproduce (portal / Stage 3)
-
-```bash
-python rank.py --official --out team_YOUR_ID.csv
-```
-
-Cleans raw `candidates.jsonl` then ranks with `job_description.md`.

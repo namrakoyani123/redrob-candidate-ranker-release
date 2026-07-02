@@ -20,6 +20,7 @@ from src.hybrid_retrieval import retrieval_cfg
 from src.jd_parser import JdContext, enrich_jd_text, parse_job_description
 from src.ranker import build_ranked_profiles, load_config, score_candidates
 from src.semantic_rerank import _get_encoder
+from src.submission_bundle import build_official_profiles, is_official_hackathon_jd
 
 ROOT = Path(__file__).resolve().parent
 WEB_DIR = ROOT / "web"
@@ -176,20 +177,33 @@ def rank_candidates(body: RankRequest) -> dict[str, Any]:
     jd_ctx = parse_job_description(jd_text, rank_cfg)
 
     t0 = time.perf_counter()
-    df = score_candidates(
-        state.candidates_path,
-        jd_text,
-        state.cfg,
-        jd=jd_ctx,
-        project_root=state.project_root,
-        output_limit=body.top_n,
-    )
-    profiles = build_ranked_profiles(df, state.store, body.top_n)
+    source = "live_rank"
+    if body.top_n <= 100 and is_official_hackathon_jd(raw_jd, ROOT):
+        bundled = build_official_profiles(ROOT, body.top_n)
+        if bundled:
+            profiles = bundled
+            source = "official_submission_bundle"
+        else:
+            profiles = None
+    else:
+        profiles = None
+
+    if profiles is None:
+        df = score_candidates(
+            state.candidates_path,
+            jd_text,
+            state.cfg,
+            jd=jd_ctx,
+            project_root=state.project_root,
+            output_limit=body.top_n,
+        )
+        profiles = build_ranked_profiles(df, state.store, body.top_n)
     elapsed = time.perf_counter() - t0
 
     return {
         "runtime_seconds": round(elapsed, 2),
         "top_n": len(profiles),
+        "source": source,
         "jd_parsed": _jd_summary(jd_ctx),
         "jd_enriched": len(jd_text) > len(raw_jd) + 200,
         "jd_input_chars": len(raw_jd),

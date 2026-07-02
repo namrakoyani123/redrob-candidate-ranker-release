@@ -993,12 +993,15 @@
         const enrichNote = data.jd_enriched
           ? ` &nbsp;·&nbsp; full JD merged (${data.jd_input_chars} → ${data.jd_rank_chars} chars)`
           : "";
+        const sourceNote = data.source === "official_submission_bundle"
+          ? " &nbsp;·&nbsp; <strong>portal CSV</strong> (100K pipeline)"
+          : "";
         metaEl.innerHTML = `
           <strong>${esc(jd.title_hint || "Role")}</strong>
           &nbsp;·&nbsp; ${jd.min_years}–${jd.max_years} yrs experience
           &nbsp;·&nbsp; ${jd.skill_count} skills tracked
           &nbsp;·&nbsp; <strong>${data.runtime_seconds}s</strong> runtime
-          &nbsp;·&nbsp; ${data.top_n} candidates${enrichNote}`;
+          &nbsp;·&nbsp; ${data.top_n} candidates${enrichNote}${sourceNote}`;
         listEl.innerHTML = (data.candidates || []).map(renderCard).join("");
         resultsEl.hidden = false;
         const elapsed = Math.floor((Date.now() - rankStartedAt) / 1000);
