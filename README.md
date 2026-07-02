@@ -11,10 +11,7 @@ Rank 100K candidates against a job description and return a top-100 shortlist wi
 
 ![End-to-end workflow](assets/end_to_end_workflow.png)
 
-1. Clean 100K JSONL and parse the JD (role, skills, location, experience band).
-2. Funnel: prescreen to ~6K, then structured scoring + traps to ~2K.
-3. Hybrid retrieval: BM25 + BGE embeddings, fused with RRF.
-4. Head calibration, blend scores, export top 100 to CSV.
+**JD + 100K JSONL in** → **Process** (clean, parse JD, prescreen, score + traps) → **Semantic search** (BM25, BGE, RRF) → **Blend & export** top 100 CSV → **Validate** format and monotonic scores.
 
 With a precomputed embedding index, a full run takes about **75-85s** on CPU. Without it, still under the 300s hackathon limit.
 
