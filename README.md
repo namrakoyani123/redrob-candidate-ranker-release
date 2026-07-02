@@ -1,5 +1,7 @@
 # Redrob Intelligent Candidate Ranker
 
+![System architecture](assets/system_architecture.png)
+
 Rank candidates from a JSONL pool against **any job description** and produce a trusted top-100 shortlist. Hybrid scoring combines semantic retrieval (BM25 + BGE) with recruiter-style structured signals and explicit honeypot guards — not keyword filters alone.
 
 **Repository:** [github.com/namrakoyani123/redrob-candidate-ranker-release](https://github.com/namrakoyani123/redrob-candidate-ranker-release)  
