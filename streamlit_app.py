@@ -60,6 +60,14 @@ def _config():
     return load_config(ROOT / "config.yaml")
 
 
+def _expand_official_jd_if_short() -> None:
+    """When the user pastes the hackathon short header, show the full job_description.md."""
+    if not FULL_JD.is_file():
+        return
+    raw = st.session_state.get("official_jd_input", "")
+    st.session_state["official_jd_input"] = enrich_jd_text(raw, FULL_JD)
+
+
 st.set_page_config(page_title="Redrob Ranker Sandbox", layout="wide")
 st.title("Redrob Candidate Ranker — Sandbox")
 
@@ -83,15 +91,24 @@ _default_jd = DEFAULT_JD.read_text(encoding="utf-8") if DEFAULT_JD.exists() else
 
 if mode.startswith("Official"):
     st.info(
-        "Shows the **exact** top 100 from the full **100K** pipeline (`run.py` + `job_description.md`). "
-        "Same ranks, scores, and reasoning as `team_redrob_candidate_ranker.csv`."
+        "Paste the **short hackathon JD** or the full role text — the short header auto-expands to "
+        "`job_description.md`. Results match `team_redrob_candidate_ranker.csv` (100K pipeline)."
     )
-    if FULL_JD.exists():
-        st.session_state.setdefault("jd_text", FULL_JD.read_text(encoding="utf-8"))
-    jd_text = st.text_area("Job description (official full JD)", value=st.session_state.get("jd_text", _default_jd), height=160)
+    st.session_state.setdefault("official_jd_input", _default_jd)
+    if FULL_JD.is_file():
+        st.session_state["official_jd_input"] = enrich_jd_text(
+            st.session_state["official_jd_input"], FULL_JD
+        )
+    jd_text = st.text_area(
+        "Job description",
+        height=280,
+        key="official_jd_input",
+        on_change=_expand_official_jd_if_short,
+    )
     top_n = st.number_input("Top N", min_value=1, max_value=100, value=100)
 
     if st.button("Show official submission", type="primary"):
+        jd_text = enrich_jd_text(jd_text, FULL_JD) if FULL_JD.exists() else jd_text
         if not is_official_hackathon_jd(jd_text, ROOT):
             st.warning(
                 "JD is not the official Redrob hackathon role — results may differ from the portal CSV. "
@@ -101,17 +118,7 @@ if mode.startswith("Official"):
         if not profiles:
             st.error("Missing sandbox/submission_bundle.json — run scripts/export_submission_bundle.py")
             st.stop()
-        jd_ctx = parse_job_description(enrich_jd_text(jd_text, FULL_JD), rank_cfg)
         st.success(f"Loaded {len(profiles)} rows from portal submission (100K pipeline output)")
-        st.json(
-            {
-                "source": SUBMISSION_CSV.name,
-                "pipeline": bundle.get("pipeline_note") if bundle else "",
-                "title_hint": jd_ctx.title_hint,
-                "experience": f"{jd_ctx.min_years:.0f}-{jd_ctx.max_years:.0f}y",
-                "skills_tracked": len(jd_ctx.skill_terms),
-            }
-        )
         st.dataframe(_profiles_to_dataframe(profiles), use_container_width=True)
         st.download_button(
             "Download submission CSV",
