@@ -1,7 +1,7 @@
 team_name: "Redrob Candidate Ranker"
 participant_id: "team_redrob_candidate_ranker"
 github_repo: "https://github.com/namrakoyani123/redrob-candidate-ranker-release"
-sandbox_url: "https://redrob-candidate-ranker.streamlit.app"
+sandbox_url: "https://redrob-candidate-ranker-release-ftechp5q6jwctgwpqtuyae.streamlit.app"
 
 submission_notes: |
   Hybrid ranker aligned with official JD: BM25 + BGE-small + RRF on 100K with precomputed
