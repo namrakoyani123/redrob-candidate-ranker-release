@@ -1,0 +1,9 @@
+# Docker
+data/candidates_cleaned.jsonl
+data/embeddings/checkpoints/
+.venv/
+__pycache__/
+*.pyc
+.git/
+outputs/*.csv
+comparison/

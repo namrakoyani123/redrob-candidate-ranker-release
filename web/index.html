@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Redrob Candidate Ranker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f7f4ef;
+      --bg-warm: #efe8dc;
+      --surface: #ffffff;
+      --surface-elevated: #fffdf9;
+      --navy: #0c1a33;
+      --navy-soft: #1e3358;
+      --royal: #1a4a8a;
+      --gold: #b8860b;
+      --gold-rich: #c9a227;
+      --gold-light: #f3e4c4;
+      --gold-pale: #faf3e3;
+      --burgundy: #7a1f3d;
+      --emerald: #0a6b4f;
+      --emerald-light: #d4f0e6;
+      --border: rgba(12, 26, 51, 0.1);
+      --border-gold: rgba(201, 162, 39, 0.45);
+      --text: #0c1a33;
+      --muted: #5c6b82;
+      --shadow: 0 4px 24px rgba(12, 26, 51, 0.08);
+      --shadow-lg: 0 12px 40px rgba(12, 26, 51, 0.12);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Inter", system-ui, sans-serif;
+      color: var(--text);
+      line-height: 1.6;
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 70% 50% at 0% 0%, rgba(201, 162, 39, 0.14), transparent 55%),
+        radial-gradient(ellipse 60% 45% at 100% 0%, rgba(26, 74, 138, 0.1), transparent 50%),
+        radial-gradient(ellipse 50% 40% at 50% 100%, rgba(122, 31, 61, 0.06), transparent 55%),
+        linear-gradient(180deg, var(--bg-warm) 0%, var(--bg) 40%, #f9f7f3 100%);
+      background-attachment: fixed;
+    }
+
+    header {
+      padding: 1.35rem 2rem;
+      border-bottom: 1px solid var(--border-gold);
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-soft) 55%, #243d6b 100%);
+      box-shadow: var(--shadow-lg);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .brand {
+      max-width: 1040px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(145deg, var(--gold-rich) 0%, #e8c96a 100%);
+      display: grid;
+      place-items: center;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: var(--navy);
+      box-shadow: 0 4px 16px rgba(201, 162, 39, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+    }
+
+    header h1 {
+      margin: 0;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: #fff;
+    }
+
+    header p {
+      margin: 0.15rem 0 0;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 0.88rem;
+      font-weight: 400;
+    }
+
+    main {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 3.5rem;
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border-gold);
+      border-radius: var(--radius);
+      padding: 1.5rem 1.6rem;
+      box-shadow: var(--shadow);
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      margin-bottom: 0.6rem;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      padding: 1rem 1.15rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface-elevated);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      resize: vertical;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--gold-rich);
+      box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.18);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      margin-top: 1.1rem;
+    }
+
+    .jd-hint {
+      margin: 0.85rem 0 0;
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .toolbar label {
+      margin: 0;
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 0.9rem;
+      color: var(--navy);
+    }
+
+    input[type="number"] {
+      width: 4.5rem;
+      padding: 0.55rem 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-elevated);
+      color: var(--navy);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.9rem;
+    }
+
+    button {
+      padding: 0.7rem 1.4rem;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+    }
+
+    button:active:not(:disabled) { transform: scale(0.98); }
+
+    #rankBtn {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--royal) 100%);
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(12, 26, 51, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    #rankBtn:hover:not(:disabled) {
+      box-shadow: 0 6px 28px rgba(26, 74, 138, 0.35);
+    }
+
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #status {
+      padding: 0.9rem 1.15rem;
+      border-radius: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.9rem;
+      box-shadow: var(--shadow);
+    }
+
+    #status.running {
+      border-color: var(--royal);
+      color: var(--navy);
+      background: linear-gradient(90deg, #eef4fc, #fff);
+      animation: pulse-border 1.5s ease infinite;
+    }
+
+    #status.done {
+      border-color: var(--emerald);
+      color: var(--emerald);
+      background: var(--emerald-light);
+    }
+
+    #status.error {
+      border-color: #c53030;
+      color: #9b2c2c;
+      background: #fff5f5;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .timer-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.35rem;
+      flex-shrink: 0;
+    }
+
+    .timer-display {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--navy);
+      white-space: nowrap;
+    }
+
+    .timer-max {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    .timer-bar {
+      width: 140px;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(12, 26, 51, 0.1);
+      overflow: hidden;
+    }
+
+    .timer-bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--royal), var(--gold-rich));
+      transition: width 0.35s ease;
+    }
+
+    #status.running .timer-display { color: var(--royal); }
+    #status.running .timer-bar-fill.near-limit {
+      background: linear-gradient(90deg, #c53030, #e53e3e);
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(26, 74, 138, 0.2); }
+      50% { box-shadow: 0 0 0 4px rgba(26, 74, 138, 0.08); }
+    }
+
+    .results-header {
+      font-size: 0.9rem;
+      color: var(--muted);
+      padding: 1rem 1.2rem;
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-soft) 100%);
+      border: 1px solid var(--border-gold);
+      border-radius: 12px;
+      color: rgba(255, 255, 255, 0.85);
+      box-shadow: var(--shadow);
+    }
+
+    .results-header strong { color: var(--gold-rich); }
+
+    /* ── Candidate cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.4rem;
+      margin-bottom: 0.9rem;
+      box-shadow: var(--shadow);
+      transition: border-color 0.25s, box-shadow 0.25s, transform 0.2s;
+    }
+
+    .card:hover {
+      border-color: var(--border-gold);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .card.tier-top {
+      border-left: 4px solid var(--gold-rich);
+      background: linear-gradient(135deg, #fffdf9 0%, #fff 60%);
+    }
+
+    .card.tier-high { border-left: 4px solid var(--royal); }
+    .card.tier-mid { border-left: 4px solid #4a6fa5; }
+    .card.tier-low { border-left: 4px solid var(--border); }
+
+    .card-top {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 1.15rem;
+      align-items: start;
+    }
+
+    .rank-col { flex-shrink: 0; }
+
+    .rank-num {
+      display: grid;
+      place-items: center;
+      width: 3rem;
+      height: 3rem;
+      border-radius: 50%;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: var(--navy);
+      background: linear-gradient(145deg, var(--gold-light), #fff);
+      border: 2px solid var(--gold-rich);
+      box-shadow: 0 3px 12px rgba(201, 162, 39, 0.3);
+    }
+
+    .card.tier-top .rank-num {
+      background: linear-gradient(145deg, var(--gold-rich), #e8c96a);
+      color: #fff;
+      border-color: #a67c00;
+      box-shadow: 0 4px 16px rgba(201, 162, 39, 0.45);
+    }
+
+    .card-center { min-width: 0; }
+
+    .card-center h3 {
+      margin: 0 0 0.5rem;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      line-height: 1.3;
+      color: var(--navy);
+    }
+
+    .cand-id-pill {
+      display: inline-block;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--navy);
+      background: linear-gradient(135deg, var(--gold-pale) 0%, var(--gold-light) 100%);
+      border: 2px solid var(--gold-rich);
+      border-radius: 8px;
+      padding: 0.4rem 0.85rem;
+      margin-bottom: 0.45rem;
+      box-shadow: 0 2px 8px rgba(201, 162, 39, 0.2);
+    }
+
+    .card.tier-top .cand-id-pill {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--royal) 100%);
+      color: var(--gold-rich);
+      border-color: var(--gold-rich);
+    }
+
+    .card-loc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .card-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.65rem;
+      flex-shrink: 0;
+    }
+
+    .fit-badge {
+      padding: 0.35rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .fit-badge.tier-top {
+      background: linear-gradient(135deg, var(--burgundy), #9b2c4a);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 2px 12px rgba(122, 31, 61, 0.3);
+    }
+
+    .fit-badge.tier-high {
+      background: linear-gradient(135deg, var(--navy), var(--royal));
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .fit-badge.tier-mid {
+      background: var(--gold-pale);
+      color: var(--navy-soft);
+      border-color: var(--gold-rich);
+    }
+
+    .fit-badge.tier-low {
+      background: #f0f2f6;
+      color: var(--muted);
+      border-color: var(--border);
+    }
+
+    .score-block {
+      text-align: right;
+      padding: 0.5rem 0.85rem;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-soft) 100%);
+      border: 1px solid var(--border-gold);
+      min-width: 7rem;
+    }
+
+    .score-label {
+      display: block;
+      font-size: 0.62rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    .score-value {
+      display: block;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--gold-rich);
+      line-height: 1.2;
+      margin-top: 0.15rem;
+    }
+
+    .reasoning {
+      margin: 1rem 0 0;
+      padding: 0.85rem 1rem;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--navy-soft);
+      background: var(--gold-pale);
+      border-radius: 10px;
+      border-left: 3px solid var(--gold-rich);
+    }
+
+    .reasoning-caveat {
+      margin-top: 0.65rem;
+      padding-top: 0.55rem;
+      border-top: 1px dashed rgba(12, 26, 51, 0.12);
+      font-size: 0.82rem;
+      color: var(--burgundy);
+      font-weight: 500;
+    }
+
+    .skills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.7rem;
+    }
+
+    .skill {
+      padding: 0.22rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      background: rgba(26, 74, 138, 0.08);
+      border: 1px solid rgba(26, 74, 138, 0.2);
+      color: var(--royal);
+    }
+
+    .card details {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 0.7rem;
+    }
+
+    .card summary {
+      cursor: pointer;
+      color: var(--royal);
+      font-weight: 600;
+      user-select: none;
+    }
+
+    .card summary:hover { color: var(--navy); }
+
+    .profile-readable {
+      margin-top: 0.75rem;
+      padding: 1rem 1.1rem;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+    }
+
+    .profile-section {
+      margin-bottom: 1.1rem;
+    }
+
+    .profile-section:last-child { margin-bottom: 0; }
+
+    .profile-section h4 {
+      margin: 0 0 0.55rem;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--navy);
+      letter-spacing: 0.02em;
+      border-bottom: 1px solid var(--border-gold);
+      padding-bottom: 0.35rem;
+    }
+
+    .profile-summary {
+      margin: 0;
+      font-size: 0.88rem;
+      line-height: 1.65;
+      color: var(--navy-soft);
+    }
+
+    .profile-kv-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.5rem 1rem;
+      font-size: 0.84rem;
+    }
+
+    .profile-kv {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+    }
+
+    .profile-kv dt {
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    .profile-kv dd {
+      margin: 0;
+      color: var(--navy);
+      font-weight: 500;
+    }
+
+    .career-item {
+      padding: 0.65rem 0;
+      border-bottom: 1px dashed var(--border);
+    }
+
+    .career-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+    .career-item h5 {
+      margin: 0 0 0.2rem;
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    .career-meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .career-desc {
+      margin: 0;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      color: var(--navy-soft);
+    }
+
+    .skill-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem 0.6rem;
+      padding: 0.35rem 0;
+      border-bottom: 1px solid rgba(12, 26, 51, 0.06);
+      font-size: 0.82rem;
+    }
+
+    .skill-row:last-child { border-bottom: none; }
+
+    .skill-name { font-weight: 600; color: var(--navy); min-width: 8rem; }
+
+    .skill-tag {
+      padding: 0.12rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: var(--gold-pale);
+      color: var(--navy-soft);
+      border: 1px solid var(--border-gold);
+    }
+
+    .skill-tag.expert { background: #e8f5ee; color: var(--emerald); border-color: #9fd4b8; }
+
+    .edu-item, .cert-item {
+      font-size: 0.84rem;
+      color: var(--navy-soft);
+      padding: 0.3rem 0;
+    }
+
+    .profile-json details { margin-top: 0.85rem; }
+
+    .card pre {
+      white-space: pre-wrap;
+      margin: 0.5rem 0 0;
+      font-size: 0.72rem;
+      overflow: auto;
+      max-height: 280px;
+      padding: 0.75rem;
+      border-radius: 8px;
+      background: #f4f6f9;
+      border: 1px solid var(--border);
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    @media (max-width: 640px) {
+      .card-top {
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto auto;
+      }
+      .card-right {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+      }
+      .cand-id-pill {
+        font-size: 0.95rem;
+        display: block;
+        width: fit-content;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-icon">R</div>
+      <div>
+        <h1>Redrob Candidate Ranker</h1>
+        <p>Executive shortlist · 100,000 profiles · hybrid BM25 + BGE intelligence</p>
+      </div>
+    </div>
+  </header>
+  <main>
+    <section class="panel">
+      <label for="jd">Job description</label>
+      <textarea id="jd" placeholder="Paste job description (role, skills, experience, location, disqualifiers…)"></textarea>
+      <div class="toolbar">
+        <label>Top N <input type="number" id="topN" value="100" min="1" max="500" /></label>
+        <button type="button" id="rankBtn">Rank candidates</button>
+      </div>
+      <p class="jd-hint">Paste any job description and click Rank. Scoring 100K profiles — max 130 seconds.</p>
+    </section>
+    <div id="status">
+      <div class="status-row">
+        <span id="statusMsg">Ready — paste a job description and click Rank.</span>
+        <div class="timer-block" id="timerBlock" hidden>
+          <span class="timer-display" id="timerDisplay">0s</span>
+          <span class="timer-max">max 130 sec</span>
+          <div class="timer-bar"><div class="timer-bar-fill" id="timerBar"></div></div>
+        </div>
+      </div>
+    </div>
+    <section id="results" hidden>
+      <div class="results-header" id="meta"></div>
+      <div id="list" style="margin-top: 1rem"></div>
+    </section>
+  </main>
+  <script>
+    const jdEl = document.getElementById("jd");
+    const topNEl = document.getElementById("topN");
+    const rankBtn = document.getElementById("rankBtn");
+    const statusEl = document.getElementById("status");
+    const statusMsgEl = document.getElementById("statusMsg");
+    const timerBlockEl = document.getElementById("timerBlock");
+    const timerDisplayEl = document.getElementById("timerDisplay");
+    const timerBarEl = document.getElementById("timerBar");
+    const resultsEl = document.getElementById("results");
+    const metaEl = document.getElementById("meta");
+    const listEl = document.getElementById("list");
+
+    const MAX_RANK_SEC = 130;
+    let rankTimerId = null;
+    let rankStartedAt = 0;
+
+    function setStatus(msg, cls) {
+      statusMsgEl.textContent = msg;
+      statusEl.className = cls || "";
+    }
+
+    function stopRankTimer() {
+      if (rankTimerId != null) {
+        clearInterval(rankTimerId);
+        rankTimerId = null;
+      }
+      timerBlockEl.hidden = true;
+      timerBarEl.style.width = "0%";
+      timerBarEl.classList.remove("near-limit");
+    }
+
+    function startRankTimer() {
+      stopRankTimer();
+      rankStartedAt = Date.now();
+      timerBlockEl.hidden = false;
+      timerDisplayEl.textContent = "0s";
+      timerBarEl.style.width = "0%";
+      rankTimerId = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - rankStartedAt) / 1000);
+        timerDisplayEl.textContent = `${elapsed}s`;
+        const pct = Math.min(100, (elapsed / MAX_RANK_SEC) * 100);
+        timerBarEl.style.width = `${pct}%`;
+        timerBarEl.classList.toggle("near-limit", elapsed >= MAX_RANK_SEC * 0.85);
+        setStatus(`Ranking 100K candidates… ${elapsed}s elapsed`, "running");
+      }, 1000);
+    }
+
+    function esc(s) {
+      const d = document.createElement("div");
+      d.textContent = s == null ? "" : String(s);
+      return d.innerHTML;
+    }
+
+    function badgeTier(rank) {
+      if (rank <= 3) return "tier-top";
+      if (rank <= 10) return "tier-high";
+      if (rank <= 25) return "tier-mid";
+      return "tier-low";
+    }
+
+    function fitBadgeFromRank(rank, candidateId) {
+      const pick = String(candidateId).split("").reduce((s, c) => s + c.charCodeAt(0), 0);
+      let labels;
+      if (rank <= 3) labels = ["Top pick", "Strong match", "Best fit"];
+      else if (rank <= 10) labels = ["Highly recommended", "Shortlist", "Strong match", "Recommended"];
+      else if (rank <= 25) labels = ["Good fit", "Solid match", "JD aligned"];
+      else if (rank <= 50) labels = ["Fit", "Worth review", "Consider"];
+      else labels = ["Pipeline", "Backup", "Review"];
+      return labels[pick % labels.length];
+    }
+
+    function fmtDate(d) {
+      if (!d) return "Present";
+      const parts = String(d).slice(0, 10).split("-");
+      if (parts.length < 2) return d;
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const m = parseInt(parts[1], 10);
+      return `${months[m - 1] || parts[1]} ${parts[0]}`;
+    }
+
+    function fmtMonths(m) {
+      if (m == null || m === "") return "";
+      const n = Number(m);
+      if (!Number.isFinite(n)) return "";
+      if (n < 12) return `${n} mo`;
+      const y = Math.floor(n / 12);
+      const rem = n % 12;
+      return rem ? `${y}y ${rem}mo` : `${y}y`;
+    }
+
+    function profileKv(label, value) {
+      if (value == null || value === "") return "";
+      return `<div class="profile-kv"><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`;
+    }
+
+    function renderReadableProfile(c) {
+      const p = c.profile || {};
+      const sig = c.redrob_signals || {};
+      const salary = sig.expected_salary_range_inr_lpa;
+
+      const overviewBits = [
+        profileKv("Headline", p.headline),
+        profileKv("Current role", p.current_title),
+        profileKv("Company", p.current_company),
+        profileKv("Industry", p.current_industry),
+        profileKv("Company size", p.current_company_size),
+        profileKv("Location", [p.location, p.country].filter(Boolean).join(", ")),
+        profileKv("Experience", p.years_of_experience != null ? `${p.years_of_experience} years` : ""),
+        profileKv("Open to work", sig.open_to_work_flag === true ? "Yes" : sig.open_to_work_flag === false ? "No" : ""),
+        profileKv("Notice period", sig.notice_period_days != null ? `${sig.notice_period_days} days` : ""),
+        profileKv("Work mode", sig.preferred_work_mode),
+        profileKv("Relocate", sig.willing_to_relocate === true ? "Yes" : sig.willing_to_relocate === false ? "No" : ""),
+        profileKv(
+          "Salary (INR LPA)",
+          salary && (salary.min != null || salary.max != null)
+            ? `${salary.min ?? "?"} – ${salary.max ?? "?"}`
+            : ""
+        ),
+        profileKv("Response rate", sig.recruiter_response_rate != null ? `${Math.round(sig.recruiter_response_rate * 100)}%` : ""),
+        profileKv("Last active", sig.last_active_date),
+        profileKv("Endorsements", sig.endorsements_received),
+        profileKv("Profile completeness", sig.profile_completeness_score != null ? `${sig.profile_completeness_score}%` : ""),
+      ].filter(Boolean).join("");
+
+      const career = (c.career_history || [])
+        .slice(0, 6)
+        .map((job) => {
+          const range = `${fmtDate(job.start_date)} – ${job.is_current ? "Present" : fmtDate(job.end_date)}`;
+          const meta = [job.company, range, fmtMonths(job.duration_months), job.industry].filter(Boolean).join(" · ");
+          const desc = job.description ? `<p class="career-desc">${esc(job.description)}</p>` : "";
+          return `<div class="career-item"><h5>${esc(job.title || "Role")}</h5><div class="career-meta">${esc(meta)}</div>${desc}</div>`;
+        })
+        .join("");
+
+      const skills = (c.skills || [])
+        .map((s) => {
+          const prof = (s.proficiency || "").toLowerCase();
+          const tagCls = prof === "expert" ? "skill-tag expert" : "skill-tag";
+          const bits = [fmtMonths(s.duration_months), s.endorsements != null ? `${s.endorsements} endorsements` : ""].filter(Boolean);
+          return `<div class="skill-row"><span class="skill-name">${esc(s.name)}</span><span class="${tagCls}">${esc(s.proficiency || "—")}</span>${bits.length ? `<span class="career-meta">${esc(bits.join(" · "))}</span>` : ""}</div>`;
+        })
+        .join("");
+
+      const education = (c.education || [])
+        .map((e) => {
+          const line = [e.degree, e.field_of_study, e.institution].filter(Boolean).join(" · ");
+          const yrs = e.start_year && e.end_year ? `${e.start_year}–${e.end_year}` : "";
+          const extra = [yrs, e.grade, e.tier ? e.tier.replace("_", " ") : ""].filter(Boolean).join(" · ");
+          return `<div class="edu-item"><strong>${esc(line)}</strong>${extra ? `<br>${esc(extra)}` : ""}</div>`;
+        })
+        .join("");
+
+      const certs = (c.certifications || [])
+        .map((cert) => {
+          const line = [cert.name, cert.issuer, cert.year].filter(Boolean).join(" · ");
+          return `<div class="cert-item">${esc(line)}</div>`;
+        })
+        .join("");
+
+      const langs = (c.languages || [])
+        .map((l) => `${l.language}${l.proficiency ? ` (${l.proficiency})` : ""}`)
+        .join(", ");
+
+      let html = '<div class="profile-readable">';
+
+      if (p.summary) {
+        html += `<div class="profile-section"><h4>Summary</h4><p class="profile-summary">${esc(p.summary)}</p></div>`;
+      }
+      if (overviewBits) {
+        html += `<div class="profile-section"><h4>Overview</h4><dl class="profile-kv-grid">${overviewBits}</dl></div>`;
+      }
+      if (career) {
+        html += `<div class="profile-section"><h4>Career history</h4>${career}</div>`;
+      }
+      if (skills) {
+        html += `<div class="profile-section"><h4>Skills</h4>${skills}</div>`;
+      }
+      if (education) {
+        html += `<div class="profile-section"><h4>Education</h4>${education}</div>`;
+      }
+      if (certs) {
+        html += `<div class="profile-section"><h4>Certifications</h4>${certs}</div>`;
+      }
+      if (langs) {
+        html += `<div class="profile-section"><h4>Languages</h4><p class="profile-summary">${esc(langs)}</p></div>`;
+      }
+
+      html += `<div class="profile-json"><details><summary>Raw JSON (advanced)</summary><pre>${esc(JSON.stringify(c, null, 2))}</pre></details></div>`;
+      html += "</div>";
+      return html;
+    }
+
+    function splitReasoningCaveat(text) {
+      const raw = text == null ? "" : String(text);
+      const idx = raw.indexOf("Caveat:");
+      if (idx === -1) return { body: raw.trim(), caveat: "" };
+      return {
+        body: raw.slice(0, idx).replace(/\.\s*$/, "").trim(),
+        caveat: raw.slice(idx).trim(),
+      };
+    }
+
+    function renderReasoning(text) {
+      const { body, caveat } = splitReasoningCaveat(text);
+      if (!body && !caveat) return "";
+      return `
+        <div class="reasoning">
+          ${body ? esc(body) : ""}
+          ${caveat ? `<div class="reasoning-caveat">${esc(caveat)}</div>` : ""}
+        </div>`;
+    }
+
+    function renderCard(c) {
+      const p = c.profile || {};
+      const title = p.current_title || "Candidate";
+      const loc = [p.location, p.country].filter(Boolean).join(", ");
+      const yrs = p.years_of_experience != null ? `${p.years_of_experience} yrs` : "";
+      const skills = (c.skills || []).slice(0, 8).map((s) => s.name).filter(Boolean);
+      const rank = Number(c.rank) || 0;
+      const badge = c.fit_badge || fitBadgeFromRank(rank, c.candidate_id);
+      const tier = badgeTier(rank);
+      const body = c.reasoning || c.reasoning_body || "";
+      const locLine = [loc, yrs].filter(Boolean).join(" · ");
+
+      return `
+        <article class="card ${tier}">
+          <div class="card-top">
+            <div class="rank-col">
+              <span class="rank-num">${rank}</span>
+            </div>
+            <div class="card-center">
+              <h3>${esc(title)}</h3>
+              <div class="cand-id-pill">${esc(c.candidate_id)}</div>
+              ${locLine ? `<div class="card-loc">${esc(locLine)}</div>` : ""}
+            </div>
+            <div class="card-right">
+              <span class="fit-badge ${tier}">${esc(badge)}</span>
+              <div class="score-block">
+                <span class="score-label">Rank Score</span>
+                <span class="score-value">${Number(c.score).toFixed(4)}</span>
+              </div>
+            </div>
+          </div>
+          ${body ? renderReasoning(body) : ""}
+          ${skills.length ? `<div class="skills">${skills.map((s) => `<span class="skill">${esc(s)}</span>`).join("")}</div>` : ""}
+          <details>
+            <summary>View full profile</summary>
+            ${renderReadableProfile(c)}
+          </details>
+        </article>`;
+    }
+
+    rankBtn.addEventListener("click", async () => {
+      const jd_text = jdEl.value.trim();
+      if (jd_text.length < 20) {
+        setStatus("Please paste a longer job description.", "error");
+        return;
+      }
+      const top_n = Math.min(500, Math.max(1, parseInt(topNEl.value, 10) || 100));
+      rankBtn.disabled = true;
+      startRankTimer();
+      setStatus("Ranking 100K candidates… 0s elapsed", "running");
+      resultsEl.hidden = true;
+      listEl.innerHTML = "";
+
+      try {
+        const res = await fetch("/api/rank", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jd_text, top_n }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || res.statusText);
+
+        const jd = data.jd_parsed || {};
+        const enrichNote = data.jd_enriched
+          ? ` &nbsp;·&nbsp; full JD merged (${data.jd_input_chars} → ${data.jd_rank_chars} chars)`
+          : "";
+        metaEl.innerHTML = `
+          <strong>${esc(jd.title_hint || "Role")}</strong>
+          &nbsp;·&nbsp; ${jd.min_years}–${jd.max_years} yrs experience
+          &nbsp;·&nbsp; ${jd.skill_count} skills tracked
+          &nbsp;·&nbsp; <strong>${data.runtime_seconds}s</strong> runtime
+          &nbsp;·&nbsp; ${data.top_n} candidates${enrichNote}`;
+        listEl.innerHTML = (data.candidates || []).map(renderCard).join("");
+        resultsEl.hidden = false;
+        const elapsed = Math.floor((Date.now() - rankStartedAt) / 1000);
+        setStatus(
+          `Done in ${data.runtime_seconds}s (wall ${elapsed}s, max ${MAX_RANK_SEC}s) — ${data.top_n} candidates ranked.`,
+          "done"
+        );
+      } catch (err) {
+        setStatus(`Error: ${err.message}`, "error");
+      } finally {
+        stopRankTimer();
+        rankBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

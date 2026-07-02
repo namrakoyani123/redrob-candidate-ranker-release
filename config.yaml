@@ -1,0 +1,140 @@
+data:
+
+  raw_candidates_path: "../[PUB] India_runs_data_and_ai_challenge/India_runs_data_and_ai_challenge/candidates.jsonl"
+
+  cleaned_candidates_path: "data/candidates_cleaned.jsonl"
+
+  candidates_path: "data/candidates_cleaned.jsonl"
+
+  job_description_path: "job_description.md"
+
+
+
+output:
+
+  submission_path: "outputs/submission.csv"
+
+  comparison_csv_path: "../comparison/csvs/ours.csv"
+
+  top_n: 100
+
+
+
+ranking:
+
+  # Fallbacks when JD does not specify experience or location
+
+  min_years: 0
+
+  ideal_years: 5
+
+  max_years: 15
+
+  prefer_country: null
+
+  max_notice_days: 90
+
+  salary_min_lpa: 0
+
+  salary_max_lpa: 999
+
+  # Pune/Noida corridor + tier-1 welcome + relocation (JD § location/logistics)
+  location_corridor_boost: 0.18
+  location_relocation_boost: 0.14
+  tier1_welcome_boost: 0.11
+  relocate_intent_boost: 0.10
+  outside_india_penalty: 0.20
+  jd_corridor_cities: [pune, noida]
+
+  # Platform skill_assessment_scores: blend into skill_fit (max 15%)
+  prefer_notice_days: 30
+
+  skill_assessment_blend: 0.15
+  assessment_strong_threshold: 70
+
+  weights:
+
+    semantic: 0.13
+
+    role_fit: 0.28
+
+    skill_fit: 0.16
+
+    career_evidence: 0.22
+
+    product_fit: 0.08
+
+    certification_fit: 0.04
+
+    education_fit: 0.02
+
+    evaluation_fit: 0.06
+
+    platform_signals: 0.15
+
+  prescreen_pool_size: 6500
+
+  semantic_pool_size: 3000
+
+  head_calibration:
+    enabled: true
+    max_bonus: 0.07
+    top50_rerank_enabled: true
+    rerank_window: 80
+    rerank_adj_max: 0.16
+    top50_output: 50
+    top50_weights:
+      semantic: 0.20
+      evaluation_fit: 0.22
+      career_evidence: 0.16
+      role_fit: 0.12
+      location_fit: 0.12
+      platform: 0.07
+      marketplace: 0.13
+      notice_bonus: 0.05
+      yoe_band_bonus: 0.04
+      corridor_bonus: 0.07
+      relocate_bonus: 0.06
+
+
+
+  semantic_retrieval:
+
+    method: hybrid
+
+    rrf_k: 60
+
+    field_weights:
+
+      title: 3
+
+      skills: 2
+
+      career: 2
+
+      summary: 1
+
+      certs: 1
+
+    bm25:
+
+      enabled: true
+
+    bi_encoder:
+
+      enabled: true
+
+      model: BAAI/bge-small-en-v1.5
+
+      pool_size: 500
+
+      batch_size: 128
+
+      max_chars: 2500
+
+    precomputed:
+
+      enabled: true
+
+      path: data/embeddings
+

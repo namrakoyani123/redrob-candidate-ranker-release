@@ -1,0 +1,17 @@
+{
+  "total_candidates": 100000,
+  "candidates_with_fixes": 99982,
+  "fix_rate": 0.9998,
+  "flag_counts": {
+    "summary_experience_opener_removed": 99971,
+    "headline_experience_removed": 23068,
+    "salary_min_max_swapped": 18865,
+    "location_redundant_state_removed": 8289,
+    "expert_skill_zero_months": 84,
+    "yoe_mismatch_corrected": 28,
+    "yoe_resolved_profile_summary": 19,
+    "impossible_job_duration": 19,
+    "yoe_resolved_summary_career": 15,
+    "yoe_resolved_median": 13
+  }
+}

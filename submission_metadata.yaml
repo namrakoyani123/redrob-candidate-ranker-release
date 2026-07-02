@@ -1,0 +1,110 @@
+team_name: "Redrob Candidate Ranker"
+participant_id: "team_redrob_candidate_ranker"
+github_repo: "https://github.com/namrakoyani123/redrob-candidate-ranker-release"
+sandbox_url: "https://redrob-candidate-ranker.streamlit.app"
+
+submission_notes: |
+  Hybrid ranker aligned with official JD: BM25 + BGE-small + RRF on 100K with precomputed
+  embeddings; structured recruiter signals + explicit honeypot guards; head calibration for
+  marketplace/eval consensus. CPU rank step ~130–210s with index.
+
+reproduce_command: |
+  cd redrob-candidate-ranker
+  python -m venv .venv && .venv\Scripts\pip install -r requirements.txt
+  python scripts/precompute_embeddings.py --resume
+  python rank.py --skip-clean --jd job_description.md -o team_redrob_candidate_ranker.csv
+
+official_candidates_command: |
+  python rank.py --official --jd job_description.md -o team_redrob_candidate_ranker.csv
+
+entry_command: "python rank.py --official --jd job_description.md -o team_redrob_candidate_ranker.csv"
+
+docker_reproduce_command: |
+  docker build -t redrob-ranker .
+  docker run --rm -v ./data:/app/data redrob-ranker python rank.py --skip-clean -o team_redrob_candidate_ranker.csv
+
+sandbox_command: |
+  pip install streamlit && streamlit run streamlit_app.py
+
+tech_stack:
+  - Python 3.11
+  - BM25 (rank-bm25) + BGE-small-en-v1.5 (sentence-transformers)
+  - Reciprocal Rank Fusion (BM25 + dense)
+  - Precomputed embedding index (vectors.npy + candidate_ids.json)
+  - Head calibration pass (marketplace + eval signals)
+  - FastAPI web API + Streamlit sandbox
+  - Docker CPU image for Stage 3 reproduction
+
+compute:
+  device: cpu
+  gpu_used_during_ranking: false
+  candidates_scanned: 100000
+  ranking_runtime_seconds: 155
+  ranking_runtime_notes: |
+    Windows CPU with precomputed index + full official job_description.md:
+    prescreen ~20s + structured ~90s + hybrid semantic ~45s ≈ 130–210s total.
+    Precompute is one-time (~3–6h); rank step alone under 300s spec.
+
+pipeline:
+  stage_1a: "Cheap prescreen (title/skills/YOE + recsys title boost) → top 6,000"
+  stage_1b: "Full structured score + traps → top 2,500"
+  stage_2: "Field-weighted BM25 + BGE dense (precomputed index) → RRF"
+  stage_2b: "Head calibration bonus (eval/marketplace/notice relief)"
+  final: "Structured blend + YOE floor + honeypot + listing guards"
+
+signals_used:
+  profile: [title, summary, headline, company, YOE, location]
+  career_history: [descriptions, product evidence, current role weighting]
+  skills: [JD-matched proficiency, endorsements, duration]
+  education: [tier_1/2 CS-ML field boost]
+  certifications: [JD-relevant certs when present]
+  redrob_signals:
+    - profile_completeness_score
+    - last_active_date
+    - open_to_work_flag
+    - recruiter_response_rate
+    - notice_period_days
+    - preferred_work_mode
+    - willing_to_relocate
+    - skill_assessment_scores
+    - connection_count
+    - github_activity_score
+    - saved_by_recruiters_30d
+    - interview_completion_rate
+    - offer_acceptance_rate
+    - profile_views_received_30d
+    - applications_submitted_30d
+    - search_appearance_30d
+    - avg_response_time_hours
+    - endorsements_received
+    - verified_email
+    - verified_phone
+    - linkedin_connected
+    - expected_salary_range_inr_lpa
+
+guards:
+  honeypots: keyword_stuffer, expert_zero_months, timeline, title_mismatch, job_hopper, langchain_only, research_only_no_prod, consulting_only_career, cv_without_nlp_ir, architect_no_recent_code, no_external_validation, inactive_6m
+  yoe_floor: "Hard prescreen gate below min_years-2; soft band multiplier outside 5-9y preference"
+  location: "Pune/Noida corridor + tier-1 relocation + willing-to-relocate intent"
+
+output:
+  path: team_redrob_candidate_ranker.csv
+  portal_filename: team_redrob_candidate_ranker.csv
+  comparison_regression_csv: ../comparison/csvs/ours.csv
+  top_n: 100
+  columns: [candidate_id, rank, score, reasoning]
+
+precomputed_artifacts:
+  - data/embeddings/vectors.npy
+  - data/embeddings/candidate_ids.json
+  - data/embeddings/meta.json
+  - scripts/precompute_embeddings.py (--resume safe)
+
+ai_tools_used:
+  - "Cursor AI (development assistance)"
+
+declarations:
+  spec_compliance: "Ranking uses CPU only; no hosted LLM APIs; rank step <300s on 100K with index."
+  reasoning_stage4: "HIGH for ranks 1–20 (fact-dense + honest caveat); varied templates ranks 21–100"
+  honeypot_handling: "Explicit trap module + cleaning; validator checks trap-like titles in top-20"
+  deterministic: "Mostly deterministic; activity_score uses current date for last_active_date"
