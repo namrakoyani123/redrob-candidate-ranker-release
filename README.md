@@ -2,6 +2,38 @@
 
 Rank candidates from a JSONL pool against **any job description** and produce a trusted top-100 shortlist. Hybrid scoring combines semantic retrieval (BM25 + BGE) with recruiter-style structured signals and explicit honeypot guards — not keyword filters alone.
 
+**Repository:** [github.com/namrakoyani123/redrob-candidate-ranker-release](https://github.com/namrakoyani123/redrob-candidate-ranker-release)  
+**Live sandbox:** [redrob-candidate-ranker-release.streamlit.app](https://redrob-candidate-ranker-release-ftechp5q6jwctgwpqtuyae.streamlit.app)
+
+## System architecture
+
+```
+100K JSONL
+  → clean (normalize, dedupe, YOE/salary fixes)
+  → prescreen 6K (title / skills / YOE gate)
+  → structured score + honeypot traps 2K
+  → hybrid retrieval: field-weighted BM25 + BGE-small (precomputed index)
+  → RRF fusion
+  → head calibration (top-50 marketplace / eval signals)
+  → structured blend + YOE guards
+  → top 100 CSV (candidate_id, rank, score, reasoning)
+```
+
+| Stage | What runs | Output |
+|-------|-----------|--------|
+| **1 — Clean** | `scripts/clean_data.py` | `data/candidates_cleaned.jsonl` |
+| **2 — Prescreen** | Cheap title/skills/YOE filter | ~6,000 candidates |
+| **3 — Structured** | Role, skills, career, product, platform signals + traps | ~2,000 candidates |
+| **4 — Semantic** | BM25 + BGE lookup + RRF | Hybrid relevance scores |
+| **5 — Calibrate** | Head pass on top 50 | Eval/marketplace bonuses |
+| **6 — Export** | `run.py` / `rank.py` | `team_redrob_candidate_ranker.csv` |
+
+**With precomputed embeddings** (`data/embeddings/`): BGE looks up vectors for the full 2K semantic pool (~**74–83s** on 100K CPU).
+
+**Without index** (live BGE on BM25 top-500): still under the 300s spec (~**298s**).
+
+One-time precompute: `python scripts/precompute_embeddings.py --resume` (~3–6 hours CPU for 100K; checkpoint-safe).
+
 ## How it works
 
 1. **Clean the data** — normalize text, dedupe skills, fix inverted salaries, reconcile YOE, downgrade fake expert skills.
@@ -10,18 +42,6 @@ Rank candidates from a JSONL pool against **any job description** and produce a 
 4. **Hybrid semantic retrieval** — field-weighted **BM25** on 2K + **BGE-small** dense scores, fused with **RRF** (reciprocal rank fusion).
 5. **Guards** — trap penalties, YOE floor, role/skill listing guards.
 6. **Output** — CSV with `candidate_id`, `rank`, `score`, `reasoning`; auto-copy to `comparison/csvs/ours.csv` for regression.
-
-### Architecture
-
-```
-100K JSONL → clean → prescreen 6K → structured + traps 2K → BM25 + BGE + RRF → blend → top 100 CSV
-```
-
-**With precomputed embeddings** (`data/embeddings/`): BGE looks up vectors for the full 2K semantic pool (~**74–83s** on 100K CPU).
-
-**Without index** (live BGE on BM25 top-500): still under the 300s spec (~**298s**).
-
-One-time precompute: `python scripts/precompute_embeddings.py --resume` (~3–6 hours CPU for 100K; checkpoint-safe).
 
 ## Quick start
 
@@ -168,7 +188,7 @@ Mount `data/embeddings/` for sub-90s rank on 100K. See `sandbox/README.md` for S
 streamlit run streamlit_app.py
 ```
 
-Loads official `sample_candidates.json` when available; paste any JD and export ranked CSV with full profiles.
+**Official portal submission** (default) serves the exact `team_redrob_candidate_ranker.csv` via `sandbox/submission_bundle.json`. **Custom demo** ranks a small uploaded/sample pool only.
 
 ## Project layout
 
