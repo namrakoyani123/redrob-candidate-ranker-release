@@ -36,6 +36,10 @@ Rank candidates from a JSONL pool against **any job description** and produce a 
 
 One-time precompute: `python scripts/precompute_embeddings.py --resume` (~3–6 hours CPU for 100K; checkpoint-safe).
 
+## End-to-end workflow
+
+![End-to-end workflow](assets/end_to_end_workflow.png)
+
 ## How it works
 
 1. **Clean the data** — normalize text, dedupe skills, fix inverted salaries, reconcile YOE, downgrade fake expert skills.
